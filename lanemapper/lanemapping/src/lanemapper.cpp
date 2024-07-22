@@ -12,9 +12,9 @@ public:
     {
         init();
         Sublocinfo = nh.subscribe<geometry_msgs::PoseStamped>("/gt_pose_wc",1,&LaneMapper::Loc_process, this);
-        Subviperline = nh.subscribe<lane_msgs::LaneList>("/lanes_predict",1, &LaneMapper::LanemapperCallback, this);
+        Subviperline = nh.subscribe<openlane_bag::LaneList>("/lanes_predict",1, &LaneMapper::LanemapperCallback, this);
 
-        Publaneline = nh.advertise<lane_msgs::LaneList>("/buildedlane",1);
+        Publaneline = nh.advertise<openlane_bag::LaneList>("/buildedlane",1);
     }
 
     void init(){
@@ -44,12 +44,15 @@ public:
         ROS_INFO("t_diff : %f, %f, %f",m_t_diff.x(), m_t_diff.y(), m_t_diff.z());
         m_R_diff = m_R_local * last_R.transpose();
     }
-    void LanemapperCallback(const lane_msgs::LaneListConstPtr& viperIn){
-        DataPreprocess();
+    void LanemapperCallback(const openlane_bag::LaneListConstPtr& viperIn){
+        DataPreprocess(viperIn);
     }
 
-    void DataPreprocess(){
-
+    void DataPreprocess(const openlane_bag::LaneListConstPtr& viperIn){
+        // std::cout <<"viper size : " <<viperIn.num_lanes<<std::endl;
+        for(size_t i = 0; i < viperIn->lane_list.size(); i++){
+            std::cout << "points num :"<<viperIn->lane_list.size() << std::endl;
+        }
     }
 
 private:

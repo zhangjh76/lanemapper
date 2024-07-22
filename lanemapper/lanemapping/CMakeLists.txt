@@ -16,7 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
-  lane_msgs
+  openlane_bag
 )
 # find_package(Eigen REQUIRED QUIET)
 find_package(Eigen3 REQUIRED)
@@ -42,7 +42,7 @@ link_directories(
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS lane_msgs
+  CATKIN_DEPENDS openlane_bag
 #  INCLUDE_DIRS include
 #  LIBRARIES my_pkg
 #  CATKIN_DEPENDS roscpp rospy std_msgs
@@ -50,5 +50,5 @@ catkin_package(
 )
 
 add_executable(lanemapper src/lanemapper.cpp)
-add_dependencies(lanemapper ${catkin_EXPORTED_TARGETS} lane_msgs_gencpp)
+add_dependencies(lanemapper ${catkin_EXPORTED_TARGETS} openlane_bag_gencpp)
 target_link_libraries(lanemapper ${catkin_LIBRARIES} ${EIGEN_LIBRARIES})
