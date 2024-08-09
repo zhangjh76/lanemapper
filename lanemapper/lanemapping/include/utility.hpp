@@ -10,5 +10,13 @@
 #include "openlane_bag/LaneList.h"
 #include "openlane_bag/LanePoint.h"
 
+#include <ros/ros.h>  
 
+#include <nav_msgs/Path.h>  
 
+#include <geometry_msgs/PoseStamped.h>  
+
+#include <stdlib.h>    
+
+#include <time.h>  
+#include <vector>
