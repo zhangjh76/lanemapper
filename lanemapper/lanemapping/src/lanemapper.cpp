@@ -31,7 +31,7 @@ public:
         init();
         Sublocinfo = nh.subscribe<geometry_msgs::PoseStamped>("/gt_pose_wc",1,&LaneMapper::Loc_process, this);
         Subviperline = nh.subscribe<openlane_bag::LaneList>("/lanes_predict",1, &LaneMapper::LanemapperCallback, this);
-        path_pub = nh.advertise<nav_msgs::Path>("random_paths", 10);  
+        path_pub = nh.advertise<visualization_msgs::MarkerArray>("random_paths", 10);  
         Publaneline = nh.advertise<openlane_bag::LaneList>("/buildedlane",1);
     }
 
@@ -111,75 +111,57 @@ public:
                     cur_viper.m_sample_points.push_back(point);
                 }
             }
-            std::cout<<"lane: "<<i_lane<<" size of sample points : "<<cur_viper.m_sample_points.size()<<std::endl;
-            for (size_t i = 0; i < cur_viper.m_sample_points.size(); i++) {
-                std::cout << "x : " << cur_viper.m_sample_points[i].x() << " y : " << cur_viper.m_sample_points[i].y() << std::endl;
-            }
+            // std::cout<<"lane: "<<i_lane<<" size of sample points : "<<cur_viper.m_sample_points.size()<<std::endl;
+            // for (size_t i = 0; i < cur_viper.m_sample_points.size(); i++) {
+            //     std::cout << "x : " << cur_viper.m_sample_points[i].x() << " y : " << cur_viper.m_sample_points[i].y() << std::endl;
+            // }
         }
         publishViperLanes(path_pub, viper_lanes);
     }
 
     void publishViperLanes(const ros::Publisher& pub, std::vector<ViperInput>& viper_lanes) {  
-        ros::Rate rate(1); // 1 Hz  
-        // while (ros::ok()) {  
-        std::vector<nav_msgs::Path> pathMsgs;
-
         
-        for(size_t i_viper = 0; i_viper < viper_lanes.size();i_viper++){
-            auto& cur_viper = viper_lanes[i_viper];
-            nav_msgs::Path pathMsg;
-            pathMsg.header.frame_id = "map";  
-            pathMsg.header.stamp = ros::Time::now();  
-            for(size_t i_point = 0;i_point < cur_viper.m_sample_points.size();i_point++){
-                auto& cur_point = cur_viper.m_sample_points[i_point];
-                geometry_msgs::PoseStamped pose;  
-                pose.header.frame_id = "map";  
-                pose.header.stamp = ros::Time::now();  
-    
-                // Randomly generate start and end points  
-                pose.pose.position.x = cur_point.x();
-                pose.pose.position.y = cur_point.y();
-                pose.pose.orientation.w = 1.0; // Quaternion for no rotation  
-    
-                pathMsg.poses.push_back(pose); // Start point  
-            }
-            pathMsgs.push_back(pathMsg);
-            // pub.publish(pathMsg);  
-            // rate.sleep();  
-        }
-        for(size_t i = 0; i < pathMsgs.size();i++){
-            pub.publish(pathMsgs[i]);
-        }
+        visualization_msgs::MarkerArray marker_array;
+        int id = 0;
+        for(size_t i_lane = 0;i_lane < viper_lanes.size();i_lane++){
+            auto& cur_lane = viper_lanes[i_lane];
 
-            // nav_msgs::Path pathMsg;  
-            // pathMsg.header.frame_id = "map";  
-            // pathMsg.header.stamp = ros::Time::now();  
-    
-            // srand(time(NULL)); // Seed the random number generator  
-            // int numPaths= viper_lanes.size();
-            // for (int i = 0; i < numPaths; ++i) {  
-            //     geometry_msgs::PoseStamped pose;  
-            //     pose.header.frame_id = "map";  
-            //     pose.header.stamp = ros::Time::now();  
-    
-            //     // Randomly generate start and end points  
-            //     pose.pose.position.x = viper_lanes[i].m_sample_points.x();
-            //     pose.pose.position.y = viper_lanes[i].m_sample_points.y();
-            //     pose.pose.orientation.w = 1.0; // Quaternion for no rotation  
-    
-            //     pathMsg.poses.push_back(pose); // Start point  
-    
-            //     // Generate end point  
-            //     pose.pose.position.x = (rand() % 100) - 50;  
-            //     pose.pose.position.y = (rand() % 100) - 50;  
-            //     pathMsg.poses.push_back(pose); // End point  
-    
-            //     // Optionally, you could add more points to make the path smoother  
-            // }  
-    
-            
-        // }  
+            visualization_msgs::Marker marker_msg;
+            marker_msg.ns = "LaneMapperLane";
+            marker_msg.header.stamp = ros::Time::now();
+            marker_msg.header.frame_id = "map";  // TODO: configuration
+            marker_msg.lifetime = ros::Duration();
+
+            marker_msg.type = visualization_msgs::Marker::LINE_STRIP;
+
+            marker_msg.action = visualization_msgs::Marker::ADD;
+            marker_msg.pose.orientation.x = 0.0;
+            marker_msg.pose.orientation.y = 0.0;
+            marker_msg.pose.orientation.z = 0.0;
+            marker_msg.pose.orientation.w = 1.0;
+            marker_msg.scale.x = 0.3;
+            marker_msg.scale.y = 0.3;
+            marker_msg.scale.z = 0.3;
+            marker_msg.color.r = 0;
+            marker_msg.color.g = 1;
+            marker_msg.color.b = 0;
+            marker_msg.color.a = 1; // blue for lane boundary
+            marker_msg.id = id;
+
+            id++;
+            for(size_t i_node = 0;i_node < cur_lane.m_viper_points.size();i_node++){
+                geometry_msgs::Point p;
+                p.x = cur_lane.m_viper_points[i_node].x();
+                p.y = cur_lane.m_viper_points[i_node].y();
+                p.z = 0;
+                marker_msg.points.push_back(p);
+            }
+            marker_array.markers.emplace_back(marker_msg);
+        }
+        pub.publish(marker_array);
+
     }  
+
     // void ViperSampling(std::vector<ViperInput>& viper_lanes){
     //     for (size_t i_lane = 0; i_lane < viper_lanes.size(); i_lane++){
     //         auto& cur_viper = viper_lanes[i_lane];
@@ -188,7 +170,7 @@ public:
     //         std::vector<Eigen::Vector2d> sample_points;
             
 
-    //         if (raw_points.size() < 4){
+    //         if (raw_points.size() < 2){
     //             continue;
     //         }
 
@@ -217,19 +199,20 @@ public:
 
 
     //         cur_viper.m_sample_points = sample_points;
-    //         std::cout << "lane : " << i_lane << std::endl;
-    //         for (size_t i = 0; i < cur_viper.m_viper_points.size(); i++) {
-    //             std::cout << "viper : x : " << cur_viper.m_viper_points[i].x() << " y : " << cur_viper.m_viper_points[i].y() << std::endl;
-    //         }
-    //         for (size_t i = 0; i < cur_viper.m_sample_points.size(); i++) {
-    //             std::cout << "sample : x : " << cur_viper.m_sample_points[i].x() << " y : " << cur_viper.m_sample_points[i].y() << std::endl;
-    //         }
+    //         // std::cout << "lane : " << i_lane << std::endl;
+    //         // for (size_t i = 0; i < cur_viper.m_viper_points.size(); i++) {
+    //         //     std::cout << "viper : x : " << cur_viper.m_viper_points[i].x() << " y : " << cur_viper.m_viper_points[i].y() << std::endl;
+    //         // }
+    //         // for (size_t i = 0; i < cur_viper.m_sample_points.size(); i++) {
+    //         //     std::cout << "sample : x : " << cur_viper.m_sample_points[i].x() << " y : " << cur_viper.m_sample_points[i].y() << std::endl;
+    //         // }
     //     }
+    //     publishViperLanes(path_pub, viper_lanes);
     // }
 
     void DataPreprocess(const openlane_bag::LaneListConstPtr& viperIn, std::vector<ViperInput>& viper_lanes){
-        // std::cout <<"viper size : " <<viperIn.num_lanes<<std::endl;
-        // std::vector<ViperInput> viper_lanes; 
+        // std::cout <<"viper size : " <<viperIn->num_lanes<<std::endl;
+        // std::vector<ViperInput> viper_lanes;
         for(size_t i = 0; i < viperIn->lane_list.size(); i++){
             ViperInput* cur_viper = new ViperInput();
             // std::cout<<"lane : "<<i+1<<std::endl;
@@ -240,7 +223,9 @@ public:
             Eigen::Vector3d single_point;
             std::vector<Eigen::Vector3d> lane_points;
             for(size_t i_point = 0; i_point < viperIn->lane_list[i].lane.size(); i_point++){
-                
+                // if(viperIn->lane_list[i].lane[i_point].x > 50){
+                //     break;
+                // }
                 single_point.x() = viperIn->lane_list[i].lane[i_point].x;
                 single_point.y() = viperIn->lane_list[i].lane[i_point].y;
                 single_point.z() = viperIn->lane_list[i].lane[i_point].z;
@@ -249,7 +234,7 @@ public:
             }
 
             Eigen::Vector4d coeff;
-            // CurveFitting(lane_points, coeff);
+            CurveFitting(lane_points, coeff);
             cur_viper->m_viper_points = lane_points;
             cur_viper->m_coe = coeff;
             cur_viper->m_attribute = viperIn->lane_list[i].attribute;
@@ -290,7 +275,7 @@ public:
         coe = result;
         // Eigen::Vector4d result = (A.transpose() * A).transpose() * (A.transpose() * b);
 
-        // std::cout<<"result : "<<result(0)<<"  "<<result(1)<<"  "<<result(2)<<std::endl;
+        // std::cout<<"result : "<<result(0)<<"  "<<result(1)<<"  "<<result(2)<<"  "<<result(3)<<std::endl;
     }
     
 
